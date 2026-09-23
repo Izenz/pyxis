@@ -3,62 +3,67 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-    float HorizontalInput;
-    float MoveSpeed = 5f;
-    bool isFacingRight = true;
-    float JumpPower = 4f;
-    bool isJumping = false;
-
-    Rigidbody2D RB; 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public enum MovementState
     {
-        RB = GetComponent<Rigidbody2D>();
+        Floor,
+        Jumping
     }
 
-    // Update is called once per frame
+    MovementState state = MovementState.Floor;
+
+    float horizontalInput;
+    float moveSpeed = 5f;
+    bool isFacingRight = true;
+    float jumpPower = 4f;
+
+    Rigidbody2D rb;
+
+    InputAction moveAction;
+    InputAction jumpAction;
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody2D>();
+
+        moveAction = InputSystem.actions.FindAction("Move");
+        jumpAction = InputSystem.actions.FindAction("Jump");
+    }
+
     void Update()
     {
-        HorizontalInput = 0f;
-        if (Keyboard.current != null)
+        if (moveAction != null)
         {
-            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
-            {
-                HorizontalInput = -1f;
-            }
-            else if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
-            {
-                HorizontalInput = 1f;
-            }
-            if ((Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) && !isJumping)
-            {
-                RB.linearVelocity = new Vector2(RB.linearVelocity.x, JumpPower);
-                isJumping = true;
-            }
+            Vector2 moveValue = moveAction.ReadValue<Vector2>();
+            horizontalInput = moveValue.x;
         }
 
-        FlipSprite();
+        if (jumpAction != null && jumpAction.WasPressedThisFrame() && state != MovementState.Jumping)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpPower);
+            state = MovementState.Jumping;
+        }
+
+        CheckFlipSprite();
     }
 
     private void FixedUpdate()
     {
-        RB.linearVelocity = new Vector2(HorizontalInput * MoveSpeed, RB.linearVelocity.y);
+        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
     }
 
-    void FlipSprite()
+    void CheckFlipSprite()
     {
-        if (isFacingRight && HorizontalInput < 0f || !isFacingRight && HorizontalInput > 0f)
+        if ((isFacingRight && horizontalInput < 0f) || (!isFacingRight && horizontalInput > 0f))
         {
             isFacingRight = !isFacingRight;
-            Vector3 LocalScale = transform.localScale;
-            LocalScale.x *= -1f;
-            transform.localScale = LocalScale;
+            Vector3 localScale = transform.localScale;
+            localScale.x *= -1f;
+            transform.localScale = localScale;
         }
-        
     }
 
-    private void OnCollisionEnter2D(Collision2D Collision)
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        isJumping = false;
+        state = MovementState.Floor;
     }
 }
