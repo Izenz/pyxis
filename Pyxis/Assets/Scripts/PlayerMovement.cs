@@ -16,6 +16,8 @@ public class PlayerMovement : MonoBehaviour
     bool isFacingRight = true;
     float jumpPower = 4f;
 
+    bool canDoubleJump;
+
     Rigidbody2D rb;
 
     InputAction moveAction;
@@ -37,13 +39,27 @@ public class PlayerMovement : MonoBehaviour
             horizontalInput = moveValue.x;
         }
 
-        if (jumpAction != null && jumpAction.WasPressedThisFrame() && state != MovementState.Jumping)
+        if (jumpAction != null && jumpAction.WasPressedThisFrame())
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpPower);
-            state = MovementState.Jumping;
+            if (state != MovementState.Jumping)
+            {
+                Jump();
+                canDoubleJump = true;
+            }
+            else if (canDoubleJump)
+            {
+                Jump();
+                canDoubleJump = false;
+            }
         }
 
         CheckFlipSprite();
+    }
+
+    void Jump()
+    {
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpPower);
+        state = MovementState.Jumping;
     }
 
     private void FixedUpdate()
